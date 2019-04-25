@@ -1,0 +1,129 @@
+---
+title: "Smoothing Intro"
+author: "Michael M Thomas"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse) # general data cleanup
+library(magrittr) # pipe for function nesting
+library(here) # for working directory help
+
+library(sp) # spatial data plotting and classes
+library(rgdal) # working with coordinate reference systems
+library(rgeos) # topology operations on geometric objects
+library(spdep) # adjacency matrix generation
+
+
+```
+
+## R Markdown
+
+```{r dataReadin}
+# Create SpatialPolygonsDataFrame
+gaCounty <- readOGR(here("Data"), 
+                    "County",
+                    verbose = F)
+
+# Set ID attribute of polygons to their "natural" names instead of numbers
+
+# Georgia Counties Named
+gaCounty_n <- spChFIDs(
+  obj = gaCounty,
+  x = as.character(gaCounty$NAME))
+
+# Read in the aggregated data
+popData <- readxl::read_xlsx("Data/PopData.xlsx") %>% 
+  mutate(MortRate = Mortality / Population * 1000) %>% 
+  arrange(match(County, as.character(gaCounty$NAME)))
+
+
+```
+
+
+```{r createNb}
+# Create spatial neighbors
+gaCounty_nb <- poly2nb(gaCounty_n, queen=F) # Queen contingency MATTERS see emmanuel county
+
+```
+
+
+```{r classInvestigation}
+
+# Shows that this is just a list written in S4
+pryr::otype(gaCounty_nb)
+str(gaCounty_nb[1:5])
+summary(gaCounty_nb)
+
+# Annoyingly, nb objects are S3 whereas sp objects are S4
+pryr::otype(gaCounty_n)
+getClass(class(gaCounty_n))
+
+# Shows the attributes of the object
+# attributes(gaCounty_nb)
+```
+
+
+```{r smoothingAlgo}
+
+num <- popData$Mortality
+denom <- popData$Population
+
+# Creates an empty numeric vector to hold the values of the smoothing
+aggData <- data.frame(MortRateSmooth = numeric(length(gaCounty_nb)))
+
+# Add row names to the data frame for later merging
+row.names(aggData) <- row.names(gaCounty)
+
+# Combine the aggregate data with the original population data
+gaCountyData <- cbind(popData,aggData)
+
+# Cycle through rows of neighbors taking proportion of cases in queen
+# neighbors
+for(i in 1:length(gaCounty_nb)) {
+  
+  indeces <- c(i,gaCounty_nb[[i]])
+  
+  # gaCountyData$MortRateSmooth[i] <- sum(num[indeces]) / sum(denom[indeces]) * 1000
+  gaCountyData$MortRateSmooth[i] <- mean(num[indeces] / denom[indeces]) * 1000
+
+  }
+
+
+# Add the data with tht new vector to gaCounty
+gaCounty_df <- SpatialPolygonsDataFrame(gaCounty, gaCountyData)
+
+gaCounty_df$MortRate <- ifelse(gaCounty_df$MortRate == 0, NA_real_, gaCounty_df$MortRate)
+
+```
+
+
+# Assign the "smooth" vector back to the original dataset
+
+
+```{r mortRate}
+
+p <- spplot(gaCounty_df, zcol = c("MortRate"), main = "Smoothed Mortality Rates 17")
+p
+summary(gaCounty_df@data$MortRate)
+
+```
+
+```{r mortRateSmooth}
+
+ps <- spplot(gaCounty_df, zcol = c("MortRateSmooth"), main = "Smoothed Mortality Rates 17")
+ps
+summary(gaCounty_df@data$MortRateSmooth)
+
+```
+
+
+
+```{r smoothDistWeight}
+
+```
+
+  
