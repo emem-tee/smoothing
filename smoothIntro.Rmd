@@ -120,10 +120,40 @@ summary(gaCounty_df@data$MortRateSmooth)
 
 ```
 
-
+# Try a different weighting algorithm
 
 ```{r smoothDistWeight}
 
+gaCountyData$MortRateSmoothDist <- numeric(length = length(gaCounty_nb))
+
+# Find distance between two polygons
+
+dist_matrix <- as.matrix(dist(gCentroid(gaCounty_df, byid = T)@coords))
+
+for(i in 1:length(gaCounty_nb)) {
+  
+  indeces <- c(i,gaCounty_nb[[i]])
+  
+  gaCountyData$MortRateSmoothDist[i] <- sum(dist_matrix[indeces, i] * (num[indeces] / denom[indeces])) /
+    sum(dist_matrix[indeces, i]) # * 
+    # 1000 # Removed times 1000 because we are no longer in incidence measures
+
+  }
+
+
+# Add the data with tht new vector to gaCounty
+gaCounty_df <- SpatialPolygonsDataFrame(gaCounty, gaCountyData)
+
+gaCounty_df$MortRate <- ifelse(gaCounty_df$MortRate == 0, NA_real_, gaCounty_df$MortRate)
+
+
 ```
 
+```{r mortRateDist}
+
+ps <- spplot(gaCounty_df, zcol = c("MortRateSmoothDist"), main = "Smoothed Mortality Rates 17")
+ps
+summary(gaCounty_df@data$MortRateSmooth)
+
+```
   
