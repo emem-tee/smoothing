@@ -147,9 +147,13 @@ summary(gaCounty_df@data$MortRateSmooth)
 
 gaCounty_df@data %>% 
   gather(Type, Val, MortRate, MortRateSmooth) %>% 
-  mutate(County = fct_reorder(County, Val))
+  mutate(County = fct_reorder(County, Val)) %>% 
   ggplot(aes(x = County, y = Val, fill = Type)) +
-  geom
+  geom_bar(stat = "identity") +
+  theme(legend.position = "None") +
+  facet_grid(rows  = ~Type) +
+  scale_x_discrete(labels = NULL) 
+
 ```
 
 # Try a different weighting algorithm
