@@ -41,7 +41,10 @@ gaCounty_n <- spChFIDs(
 # Read in the aggregated data
 popData <- readxl::read_xlsx("Data/PopData.xlsx") %>% 
   mutate(MortRate = Mortality / Population * 1000) %>% 
-  arrange(match(County, as.character(gaCounty$NAME)))
+  arrange(match(County, as.character(gaCounty$NAME))) %>% 
+  data.frame()
+
+row.names(popData) <- as.character(gaCounty$NAME)
 
 ```
 
