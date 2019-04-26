@@ -5,6 +5,8 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
+## Packages
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -20,7 +22,8 @@ library(spdep) # adjacency matrix generation
 
 ```
 
-## R Markdown
+## Read in the .shp file
+The .shp file is read in by *rgdal::readOGR*. The *here::here* function is used to make sure if this file is knitted from somewhere other than the project root, then the data can still be properly referenced.
 
 ```{r dataReadin}
 # Create SpatialPolygonsDataFrame
@@ -39,7 +42,6 @@ gaCounty_n <- spChFIDs(
 popData <- readxl::read_xlsx("Data/PopData.xlsx") %>% 
   mutate(MortRate = Mortality / Population * 1000) %>% 
   arrange(match(County, as.character(gaCounty$NAME)))
-
 
 ```
 
