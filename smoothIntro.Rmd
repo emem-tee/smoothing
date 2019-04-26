@@ -66,6 +66,8 @@ plot(gaCounty_n, xlim = emanuelBbox["x",], ylim = emanuelBbox["y",], main = "Plo
 
 ```
 
+# Class investigation
+For some reason, the *nb* objects are S3 and the *Spatial\*DataFrame* objects are S4. Understanding how to access the attributes of both will improve the ease with which these objects are accessed/manipulated.
 
 ```{r classInvestigation}
 
@@ -92,7 +94,7 @@ denom <- popData$Population
 aggData <- data.frame(MortRateSmooth = numeric(length(gaCounty_nb)))
 
 # Add row names to the data frame for later merging
-row.names(aggData) <- row.names(gaCounty)
+row.names(aggData) <- row.names(gaCounty_n)
 
 # Combine the aggregate data with the original population data
 gaCountyData <- cbind(popData,aggData)
@@ -108,17 +110,23 @@ for(i in 1:length(gaCounty_nb)) {
 
   }
 
+# confirmation, Catoosa County
+# (14 / 68939 + # Dade
+# 24 /  66550 + # Walker
+# 16 / 104658  # Whitfield
+# ) / 3
+
 
 # Add the data with tht new vector to gaCounty
-gaCounty_df <- SpatialPolygonsDataFrame(gaCounty, gaCountyData)
+gaCounty_df <- SpatialPolygonsDataFrame(gaCounty_n, gaCountyData)
 
 gaCounty_df$MortRate <- ifelse(gaCounty_df$MortRate == 0, NA_real_, gaCounty_df$MortRate)
 
 ```
 
 
-# Assign the "smooth" vector back to the original dataset
-
+# Plot the smoothed vector
+The raw mortality rates are plotted below. To emphasize the difficulty of working with potentially small numerators, the counties with 0 oversdose deaths are plotted with no coloring.
 
 ```{r mortRate}
 
@@ -128,12 +136,20 @@ summary(gaCounty_df@data$MortRate)
 
 ```
 
+
+
 ```{r mortRateSmooth}
 
 ps <- spplot(gaCounty_df, zcol = c("MortRateSmooth"), main = "Smoothed Mortality Rates 17")
 ps
+
 summary(gaCounty_df@data$MortRateSmooth)
 
+gaCounty_df@data %>% 
+  gather(Type, Val, MortRate, MortRateSmooth) %>% 
+  mutate(County = fct_reorder(County, Val))
+  ggplot(aes(x = County, y = Val, fill = Type)) +
+  geom
 ```
 
 # Try a different weighting algorithm
