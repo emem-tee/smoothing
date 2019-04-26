@@ -19,7 +19,6 @@ library(rgdal) # working with coordinate reference systems
 library(rgeos) # topology operations on geometric objects
 library(spdep) # adjacency matrix generation
 
-
 ```
 
 ## Read in the .shp file
@@ -52,7 +51,7 @@ row.names(popData) <- as.character(gaCounty$NAME)
 # Create the *nb* object
 Here the SpatialPolygonsDataFrame is used to determine county adjacency. Luckily, Georgia doesn't have any islands that are counties or weird boarders caused by holes in the map. The *spdep* package uses boundary proximity to determine neighbor status. Interestingly, indicating queen adjacency (only one shared point between counties required for adjacency) does make a difference in this case. Emanuel county has a few neighbors that only touch it at a point. In this case, queen adjacency is set to *F*, because those small boarders don't seem to indicate similarity the way a large boarder might.
 
-```{r createNb}
+```{r createNb, fig.align='center'}
 # Create spatial neighbors
 gaCounty_nb <- poly2nb(gaCounty_n, queen=F) # Queen contingency MATTERS see emanuel county
 
@@ -84,6 +83,8 @@ getClass(class(gaCounty_n))
 # attributes(gaCounty_nb)
 ```
 
+
+# Adjacency Smoothing
 
 ```{r smoothingAlgo}
 
@@ -125,29 +126,28 @@ gaCounty_df$MortRate <- ifelse(gaCounty_df$MortRate == 0, NA_real_, gaCounty_df$
 ```
 
 
-# Plot the smoothed vector
+# Raw data and smoothed data plot
 The raw mortality rates are plotted below. To emphasize the difficulty of working with potentially small numerators, the counties with 0 oversdose deaths are plotted with no coloring.
 
-```{r mortRate}
+```{r mortRate, fig.align='center'}
 
 p <- spplot(gaCounty_df, zcol = c("MortRate"), main = "Smoothed Mortality Rates 17")
 p
-summary(gaCounty_df@data$MortRate)
+# summary(gaCounty_df@data$MortRate)
 
 ```
 
+```{r mortRateSmooth, fig.align='center'}
 
-
-```{r mortRateSmooth}
-
-ps <- spplot(gaCounty_df, zcol = c("MortRateSmooth"), main = "Smoothed Mortality Rates 17")
+ps <- spplot(gaCounty_df, zcol = c("MortRateSmooth"), main = "Adjacency Smoothed Mortality Rates 17")
 ps
 
-summary(gaCounty_df@data$MortRateSmooth)
+# summary(gaCounty_df@data$MortRateSmooth)
 
 gaCounty_df@data %>% 
   gather(Type, Val, MortRate, MortRateSmooth) %>% 
   mutate(County = fct_reorder(County, Val)) %>% 
+  replace_na(list(Val = 0)) %>% 
   ggplot(aes(x = County, y = Val, fill = Type)) +
   geom_bar(stat = "identity") +
   theme(legend.position = "None") +
@@ -157,7 +157,7 @@ gaCounty_df@data %>%
 ```
 
 # Try a different weighting algorithm
-
+The weights $w_i$ are the inverse distance between the centroid and its neighbor. I set the value of the distance between region $i$ itself to be the non-zero minimum.
 ```{r smoothDistWeight}
 
 gaCountyData$MortRateSmoothDist <- numeric(length = length(gaCounty_nb))
@@ -166,30 +166,45 @@ gaCountyData$MortRateSmoothDist <- numeric(length = length(gaCounty_nb))
 
 dist_matrix <- as.matrix(dist(gCentroid(gaCounty_df, byid = T)@coords))
 
+nonZero_min <- function(x) min(subset(x, x !=0))
+
 for(i in 1:length(gaCounty_nb)) {
   
   indeces <- c(i,gaCounty_nb[[i]])
   
-  gaCountyData$MortRateSmoothDist[i] <- sum(dist_matrix[indeces, i] * (num[indeces] / denom[indeces])) /
-    sum(dist_matrix[indeces, i]) # * 
+  w_i <- dist_matrix[indeces, i]
+  w_i[1] <- nonZero_min(w_i)
+  
+  gaCountyData$MortRateSmoothDist[i] <- sum((1 / w_i) * (num[indeces] / denom[indeces]) * 1000) /
+    sum((1 / w_i)) # * 
     # 1000 # Removed times 1000 because we are no longer in incidence measures
 
   }
 
 
 # Add the data with tht new vector to gaCounty
-gaCounty_df <- SpatialPolygonsDataFrame(gaCounty, gaCountyData)
+gaCounty_df <- SpatialPolygonsDataFrame(gaCounty_n, gaCountyData)
 
 gaCounty_df$MortRate <- ifelse(gaCounty_df$MortRate == 0, NA_real_, gaCounty_df$MortRate)
 
 
 ```
 
-```{r mortRateDist}
+```{r mortRateDist, fig.align='center'}
 
-ps <- spplot(gaCounty_df, zcol = c("MortRateSmoothDist"), main = "Smoothed Mortality Rates 17")
+ps <- spplot(gaCounty_df, zcol = c("MortRateSmoothDist"), main = "Inv Dist Smoothed Mortality Rates 17")
 ps
-summary(gaCounty_df@data$MortRateSmooth)
+# summary(gaCounty_df@data$MortRateSmooth)
+
+gaCounty_df@data %>% 
+  gather(Type, Val, MortRate, MortRateSmooth, MortRateSmoothDist) %>% 
+  mutate(County = fct_reorder(County, Val)) %>% 
+  replace_na(list(Val = 0)) %>% 
+  ggplot(aes(x = County, y = Val, fill = Type)) +
+  geom_bar(stat = "identity") +
+  theme(legend.position = "None") +
+  facet_grid(rows  = ~Type, scales = "free_y") +
+  scale_x_discrete(labels = NULL) 
 
 ```
   
