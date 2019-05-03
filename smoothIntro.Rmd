@@ -131,7 +131,7 @@ The raw mortality rates are plotted below. To emphasize the difficulty of workin
 
 ```{r mortRate, fig.align='center'}
 
-p <- spplot(gaCounty_df, zcol = c("MortRate"), main = "Smoothed Mortality Rates 17")
+p <- spplot(gaCounty_df, zcol = c("MortRate"), main = "Mortality Rates 17")
 p
 # summary(gaCounty_df@data$MortRate)
 
