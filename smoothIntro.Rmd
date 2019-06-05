@@ -133,11 +133,12 @@ gaCounty_df$MortRate <- ifelse(gaCounty_df$MortRate == 0, NA_real_, gaCounty_df$
 
 
 # Raw data and smoothed data plot
-The raw mortality rates are plotted below. To emphasize the difficulty of working with potentially small numerators, the counties with 0 oversdose deaths are plotted with no coloring. The adjacency smoothed map shows a more continuous estimate of risk in that there are no counties that show $0$ risk of opioid mortality. The smoothing also helped reduce the range of the mortality rates which was attributable to counties having small denominators more than it was attributable to extreme amounts of risk. The distributions of these values are shown in the bottom plot.
+The raw mortality rates are plotted below. To emphasize the difficulty of working with potentially small numerators, the counties with 0 oversdose deaths are plotted with no coloring. The adjacency smoothed map shows a more continuous estimate of risk in that there are no counties that show $0$ risk of drug-related mortality. The smoothing also helped reduce the range of the mortality rates which was attributable to counties having small denominators more than it was attributable to extreme amounts of risk. The distributions of these values are shown in the bottom plot.
 
 ```{r mortRate, fig.align='center'}
 
-p <- spplot(gaCounty_df, zcol = c("MortRate"), main = "Mortality Rates 17")
+p <- spplot(gaCounty_df, zcol = c("MortRate"), 
+            main = "Mortality Rates 17")
 p
 # summary(gaCounty_df@data$MortRate)
 
@@ -187,12 +188,10 @@ for(i in 1:length(gaCounty_nb)) {
 
   }
 
-
 # Add the data with tht new vector to gaCounty
 gaCounty_df <- SpatialPolygonsDataFrame(gaCounty_n, gaCountyData)
 
 gaCounty_df$MortRate <- ifelse(gaCounty_df$MortRate == 0, NA_real_, gaCounty_df$MortRate)
-
 
 ```
 
@@ -214,12 +213,14 @@ gaCounty_df@data %>%
   facet_grid(rows  = ~Type, scales = "free_y") +
   scale_x_discrete(labels = NULL) 
 
+
+
 ```
 
 # Smoothing methods compared
 
-The following group of plots shows three different modifications of the original opioid mortality data. An additional plot was added here where the top two opioid mortality rates were replaced with NA values to help reduce the color range in the map, making other high mortality rates easier to identify.
-Before moving on to other methods, it may be useful to ask around the department and do some reading about the opioid outcomes in these regions to confirm that these maps are demonstrating realistic patterns.
+The following group of plots shows three different modifications of the original drug-related mortality data. An additional plot was added here where the top two drug-related mortality rates were replaced with NA values to help reduce the color range in the map, making other high mortality rates easier to identify.
+Before moving on to other methods, it may be useful to ask around the department and do some reading about the drug-related outcomes in these regions to confirm that these maps are demonstrating realistic patterns.
 
 ```{r replace OP counties, fig.align='center'}
 
