@@ -21,6 +21,7 @@ library(sp) # spatial data plotting and classes
 library(rgdal) # working with coordinate reference systems
 library(rgeos) # topology operations on geometric objects
 library(spdep) # adjacency matrix generation
+library(RColorBrewer) # Allows for creation of color ramp
 
 ```
 
@@ -237,4 +238,63 @@ gridExtra::grid.arrange(p,p_nca,ps,ps_i, ncol = 2)
 
 ```
   
+# Add Roads/Change Color Ramp
+
+```{r AddRoads, fig.align='center'}
+
+gaRoads <- readOGR(here("Data"), "OASIS_interstates_ver4",
+                   verbose = F)
+
+spplot_ga <- function(vr, nm) {
   
+  spdf <- gaCounty_df
+  
+  spdf_mean <- mean(replace(gaCounty_df@data[,"MortRate"],
+                            is.na(gaCounty_df@data[,"MortRate"]),
+                            0)
+                      )
+  
+  spdf@data[, vr] <- spdf@data[, vr] - spdf_mean
+  
+  spplot(spdf, zcol = c(vr), 
+            main = nm,
+            col.regions = rev(cr),
+            cuts = 10,
+            ylab = "Departure from Mean",
+            sp.layout = list("sp.lines", gaRoads, 
+                             col = "grey20", lwd = 2))
+}
+
+# Raw
+cr <- brewer.pal(11, "RdYlGn",
+                 colorb)
+p <- spplot_ga("MortRate", "Mortality Rates 17")
+
+# No Charlton or Atkinson
+p_nca <- spplot_ga("MortRateNA", "Mortality Rates 17 (w/o top 2)")
+
+# Adjacency 
+ps <- spplot_ga("MortRateSmooth", "Adjacency Smoothed\n Mortality Rates 17")
+
+# Inv Distance
+ps_i <- spplot_ga("MortRateSmoothDist", "Inv Dist Smoothed\n Mortality Rates 17")
+
+gridExtra::grid.arrange(p,p_nca,ps,ps_i, ncol = 2)
+
+```
+
+# Add Bayes Estimates
+
+```{r fig.align='center'}
+
+BayEst <- readxl::read_xlsx(here("Data", "BayesEstimates.xlsx"))
+
+gaCounty_df$MortRateBayes <- BayEst$BayesMedianMu / gaCounty_df$Population * 1000
+
+ps_b <- spplot_ga("MortRateBayes", "Bayes Median\n Mortality Rates 17")
+
+gridExtra::grid.arrange(p, ps, ps_i, ps_b, ncol = 2)
+
+```
+
+
