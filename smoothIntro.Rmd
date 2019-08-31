@@ -239,6 +239,7 @@ gridExtra::grid.arrange(p,p_nca,ps,ps_i, ncol = 2)
 ```
   
 # Add Roads/Change Color Ramp
+The fillowing plots display estimates that are based off of the distance between the estimated risk for each individual county and the mean estimate of each county($smooth(x) - mean(smooth(x))$). The color ramp was changed to emphasize this distinction.
 
 ```{r AddRoads, fig.align='center'}
 
@@ -260,14 +261,12 @@ spplot_ga <- function(vr, nm) {
             main = nm,
             col.regions = rev(cr),
             cuts = 10,
-            ylab = "Departure from Mean",
             sp.layout = list("sp.lines", gaRoads, 
-                             col = "grey20", lwd = 2))
+                             col = "Orange", lwd = 2))
 }
 
 # Raw
-cr <- brewer.pal(11, "RdYlGn",
-                 colorb)
+cr <- brewer.pal(11, "PiYG")
 p <- spplot_ga("MortRate", "Mortality Rates 17")
 
 # No Charlton or Atkinson
@@ -284,6 +283,8 @@ gridExtra::grid.arrange(p,p_nca,ps,ps_i, ncol = 2)
 ```
 
 # Add Bayes Estimates
+
+The following plot has the results of a bayesian conditional autoregressive model in the top-right corner. The values plotted are the county specific medians of the posterior distribution of $\mu$. A posterior distribution of $\mu$ is estimated using Markov Chain Monte Carlo sampling. The median of this distribution is meant to represent the 50th percentile of the posterior distribution. This value is adjusted for a county's median age, and it takes into account autocorrelation with neighboring counties.
 
 ```{r fig.align='center'}
 
